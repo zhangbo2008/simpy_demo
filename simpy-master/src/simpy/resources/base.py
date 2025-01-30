@@ -216,7 +216,7 @@ class BaseResource(Generic[PutType, GetType]):
 
     def _trigger_put(self, get_event: Optional[GetType]) -> None:
         """This method is called once a new put event has been created or a get
-        event has been processed.
+        event has been processed.  这个方法被调用: 一种情况是一个put event被创造时, 或者一个get event被处理时.  这个函数用来迭代全部的put 事件, 看put事件的条件是否符合. 因为当put被创造时候我们就需要看看put_queue里面的东西是否可以被触发, 能触发的触发一下. 同理, get事件 被触发时候也要,先处理一下put queue里面的是否可以触发的触发一下.
 
         The method iterates over all put events in the :attr:`put_queue` and
         calls :meth:`_do_put` to check if the conditions for the event are met.
@@ -233,10 +233,10 @@ class BaseResource(Generic[PutType, GetType]):
             proceed = self._do_put(put_event)
             if not put_event.triggered:
                 idx += 1
-            elif self.put_queue.pop(idx) != put_event:
+            elif self.put_queue.pop(idx) != put_event:# 这行会pop掉第idx那个数据.
                 raise RuntimeError('Put queue invariant violated')
 
-            if not proceed:
+            if not proceed:# 如果当前event 还没有被处理, 那么后面不需要再看了, 还要继续等.
                 break
 
     def _do_get(self, event: GetType) -> Optional[bool]:
