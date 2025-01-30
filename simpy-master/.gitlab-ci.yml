@@ -1,0 +1,105 @@
+image: python
+
+stages:
+  - build
+  - test
+  - deploy
+
+build:
+  stage: build
+  script:
+    - python -m pip install build
+    - python -m build
+    - python -m pip install dist/*.tar.gz
+    - python -c 'import simpy; print(simpy.__version__)'
+    - python -m pip uninstall --yes --quiet simpy
+    - python -m pip install dist/*.whl
+    - python -c 'import simpy; print(simpy.__version__)'
+    - python -m pip uninstall --yes --quiet simpy
+  artifacts:
+    paths:
+      - dist
+
+python38:
+  image: python:3.8
+  stage: test
+  script:
+    - python -m pip install tox
+    - python -m tox -e py38
+
+python39:
+  image: python:3.9
+  stage: test
+  script:
+    - python -m pip install tox
+    - python -m tox -e py39
+
+python310:
+  image: python:3.10
+  stage: test
+  script:
+    - python -m pip install tox
+    - python -m tox -e py310
+
+python311:
+  image: python:3.11
+  stage: test
+  script:
+    - python -m pip install tox
+    - python -m tox -e py311
+
+python312:
+  image: python:3.12
+  stage: test
+  script:
+    - python -m pip install tox
+    - python -m tox -e py312
+
+pypy3:
+  image: pypy:3
+  stage: test
+  script:
+    - pypy3 -m pip install tox
+    - pypy3 -m tox -e pypy3
+
+doctest:
+  stage: test
+  script:
+    - python -m pip install tox
+    - python -m tox -e docs
+
+sphinx:
+  stage: test
+  script:
+    - python -m pip install tox
+    - python -m tox -e sphinx
+
+ruff:
+  stage: test
+  script:
+    - python -m pip install tox
+    - python -m tox -e ruff
+
+mypy:
+  stage: test
+  script:
+    - python -m pip install tox
+    - python -m tox -e mypy
+
+twine-check:
+  stage: test
+  dependencies:
+    - build
+  script:
+    - python -m pip install twine
+    - python -m twine check dist/*
+
+pypi:
+  stage: deploy
+  dependencies:
+    - build
+  only:
+    - tags
+  script:
+    - python -m pip install twine
+    - python -m twine upload --non-interactive dist/*
