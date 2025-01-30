@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 ResourceType = TypeVar('ResourceType', bound='BaseResource')
 
-
+# put 是event的一个子类. 后面一个是上下文管理器, 让他可以使用with语法,第三个是继承resource类型.
 class Put(Event, ContextManager['Put'], Generic[ResourceType]):
     """Generic event for requesting to put something into the *resource*.
 
@@ -43,15 +43,15 @@ class Put(Event, ContextManager['Put'], Generic[ResourceType]):
         with res.put(item) as request:
             yield request
 
-    """
+    """# 这里面get put涉及2个队列, put_queue, get_queue都是list
 
     def __init__(self, resource: ResourceType):
         super().__init__(resource._env)
         self.resource = resource
-        self.proc: Optional[Process] = self.env.active_process
+        self.proc: Optional[Process] = self.env.active_process # 定义进程是env当前的进程.
 
-        resource.put_queue.append(self)  # pyright: ignore
-        self.callbacks.append(resource._trigger_get)
+        resource.put_queue.append(self)  # pyright: ignore # 把put事件放到put_queue里面.
+        self.callbacks.append(resource._trigger_get)# 处理函数写进callbacks
         resource._trigger_put(None)
 
     def __enter__(self) -> Put:

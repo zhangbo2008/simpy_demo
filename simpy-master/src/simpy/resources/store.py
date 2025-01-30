@@ -109,7 +109,7 @@ class Store(base.BaseResource):
 
     def _do_get(self, event: StoreGet) -> Optional[bool]:
         if self.items:
-            event.succeed(self.items.pop(0))
+            event.succeed(self.items.pop(0))# get最早插入的.这就是fifo策略.
         return None
 
 
@@ -139,7 +139,7 @@ class PriorityStore(Store):
 
     Unlike :class:`Store` which provides first-in first-out discipline,
     :class:`PriorityStore` maintains items in sorted order such that
-    the smallest items value are retrieved first from the store.
+    the smallest items value are retrieved first from the store. 最小的value会最早被取出.
 
     All items in a *PriorityStore* instance must be order-able; which is to say
     that items must implement :meth:`~object.__lt__()`. To use unorderable
@@ -149,13 +149,13 @@ class PriorityStore(Store):
 
     def _do_put(self, event: StorePut) -> Optional[bool]:
         if len(self.items) < self._capacity:
-            heappush(self.items, event.item)
+            heappush(self.items, event.item) # 这里面的item互相之间可以比较大小.
             event.succeed()
         return None
 
     def _do_get(self, event: StoreGet) -> Optional[bool]:
         if self.items:
-            event.succeed(heappop(self.items))
+            event.succeed(heappop(self.items)) # pop给的是优先级最高的
         return None
 
 
@@ -196,8 +196,8 @@ class FilterStore(Store):
     def _do_get(  # type: ignore[override]
         self, event: FilterStoreGet
     ) -> Optional[bool]:
-        for item in self.items:
-            if event.filter(item):
+        for item in self.items:#遍历所有items,然后取出一个.
+            if event.filter(item): # filter是之前传入的过滤函数.这里面的get就是多加了200行这个过滤.
                 self.items.remove(item)
                 event.succeed(item)
                 break

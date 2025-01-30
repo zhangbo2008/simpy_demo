@@ -24,7 +24,7 @@ class ContainerPut(base.Put):
 
     Raise a :exc:`ValueError` if ``amount <= 0``.
 
-    """
+    """ # amount是put的数量.
 
     def __init__(self, container: Container, amount: ContainerAmount):
         if amount <= 0:
@@ -84,7 +84,7 @@ class Container(base.BaseResource):
 
         super().__init__(env, capacity)
 
-        self._level = init
+        self._level = init  # level表示当前容器里面的物品数量.
 
     @property
     def level(self) -> ContainerAmount:
@@ -110,9 +110,9 @@ class Container(base.BaseResource):
         get = BoundClass(ContainerGet)
 
     def _do_put(self, event: ContainerPut) -> Optional[bool]:
-        if self._capacity - self._level >= event.amount:
-            self._level += event.amount
-            event.succeed()
+        if self._capacity - self._level >= event.amount:# 如果容量足够, 那么就进行put
+            self._level += event.amount # level就是当前容器中的物品数量. 加上amoutn
+            event.succeed() # 触发成功.
             return True
         else:
             return None

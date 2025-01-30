@@ -38,7 +38,7 @@ def start_delayed(
     """
     if delay <= 0:
         raise ValueError(f'delay(={delay}) must be > 0.')
-
+#就是在之前的proces,前面先运行一个timeout.
     def starter() -> Generator[Event, None, Process]:
         yield env.timeout(delay)
         proc = env.process(generator)
@@ -46,7 +46,7 @@ def start_delayed(
 
     return env.process(starter())
 
-
+#========让event终止时候来触发env.active_process进程.
 def subscribe_at(event: Event) -> None:
     """Register at the *event* to receive an interrupt when it occurs.
 

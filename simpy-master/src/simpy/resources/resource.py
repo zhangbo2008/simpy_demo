@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     from simpy.events import Process
 
 
-class Preempted:
+class Preempted: # 资源可以设置优先级, 进行抢断.
     """Cause of a preemption :class:`~simpy.exceptions.Interrupt` containing
     information about the preemption.
 
@@ -162,7 +162,7 @@ class SortedQueue(list):
             raise RuntimeError('Cannot append event. Queue is full.')
 
         super().append(item)
-        super().sort(key=lambda e: e.key)
+        super().sort(key=lambda e: e.key) # 每一次添加一个item, 都要进行sort操作.
 
 
 class Resource(base.BaseResource):
@@ -183,7 +183,7 @@ class Resource(base.BaseResource):
 
         super().__init__(env, capacity)
 
-        self.users: List[Request] = []
+        self.users: List[Request] = [] # 当前使用资源的events
         """List of :class:`Request` events for the processes that are currently
         using the resource."""
         self.queue = self.put_queue
@@ -272,15 +272,15 @@ class PreemptiveResource(PriorityResource):
 
     users: List[PriorityRequest]  # type: ignore
 
-    def _do_put(  # type: ignore[override]
+    def _do_put(  # type: ignore[override] # 覆盖父类的do_put方法.
         self, event: PriorityRequest
     ) -> None:
-        if len(self.users) >= self.capacity and event.preempt:
+        if len(self.users) >= self.capacity and event.preempt:# 当users已经大于等于容量了,那么就需要剔除掉优先级低的user
             # Check if we can preempt another process
-            preempt = max(self.users, key=lambda e: e.key)
-            if preempt.key > event.key:
+            preempt = max(self.users, key=lambda e: e.key) # max找到优先级最低的. 越大的优先级越低.
+            if preempt.key > event.key: # 如果当前事件比preempt优先级高.那么users里面preempt去除.
                 self.users.remove(preempt)
-                preempt.proc.interrupt(  # type: ignore
+                preempt.proc.interrupt(  # type: ignore # 利用interupt事件踢掉preempt事件.
                     Preempted(
                         by=event.proc,
                         usage_since=preempt.usage_since,
@@ -288,4 +288,4 @@ class PreemptiveResource(PriorityResource):
                     )
                 )
 
-        return super()._do_put(event)
+        return super()._do_put(event)# 上面优先级利用完了, 这时可以利用父类里面的do_put方法了.

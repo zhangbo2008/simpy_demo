@@ -82,7 +82,7 @@ class StopSimulation(Exception):
         """Used as callback in :meth:`Environment.run()` to stop the simulation
         when the *until* event occurred."""
         if event.ok:
-            raise cls(event.value)
+            raise cls(event.value) # 返回event.value
         else:
             raise event._value
 
@@ -162,7 +162,7 @@ class Environment:
         all_of = BoundClass(AllOf)
         any_of = BoundClass(AnyOf)
 
-    def schedule(#从这里能看出来整个环境是维护envs的一个堆.
+    def schedule(#从这里能看出来整个环境是维护envs的一个堆.#这个函数是往事件队列里面插入一个event, 优先级是priority.
         self,
         event: Event,
         priority: EventPriority = NORMAL,
@@ -171,7 +171,7 @@ class Environment:
         """Schedule an *event* with a given *priority* and a *delay*."""
         heappush(self._queue, (self._now + delay, priority, next(self._eid), event))
 # 从这里可以看到堆里面的元素的结构是, (仿真时间,事件触发的优先级,事件注册的id号,事件本身) # 点进去python heapq源码能看到他维护的是一个小根堆, 每次堆顶都是priority数字最小的. 也就是priority里面数字越小优先级越大.
-    def peek(self) -> SimTime:
+    def peek(self) -> SimTime:# 看一下下一个发生的事件的时间.
         """Get the time of the next scheduled event. Return
         :data:`~simpy.core.Infinity` if there is no further event."""
         try:
@@ -184,7 +184,7 @@ class Environment:
 
         Raise an :exc:`EmptySchedule` if no further events are available.
 
-        """
+        """ # 执行这个env的一步.
         try:
             self._now, _, _, event = heappop(self._queue)
         except IndexError:
@@ -194,20 +194,20 @@ class Environment:
         # immediately to prevent concurrent modifications.
         callbacks, event.callbacks = event.callbacks, None  # type: ignore
         try:
-            for callback in callbacks:
+            for callback in callbacks:#运行回调
                 callback(event)
         except StopSimulation:
             # Reassociate any remaining callbacks with the event and reschedule
             # the event to be processed when the simulation resumes.
-            event.callbacks = callbacks[callbacks.index(callback) + 1 :]
-            self.schedule(event, EventPriority(-1))
-            raise
+            event.callbacks = callbacks[callbacks.index(callback) + 1 :]# callback是上一步运行失败的回调.所以我们找到他后面部分的回调协会event回调里面.
+            self.schedule(event, EventPriority(-1)) #然后把event插入等待队列(堆)里面.
+            raise # 
 
         if not event._ok and not hasattr(event, '_defused'):
             # The event has failed and has not been defused. Crash the
             # environment.
             # Create a copy of the failure exception with a new traceback.
-            exc = type(event._value)(*event._value.args)
+            exc = type(event._value)(*event._value.args) #这个代码创造一个副本, type(event._value) 找到他的类, 然后解包后面的所有参数, 给这个类, 从而复制了一份这个对象.
             exc.__cause__ = event._value
             raise exc
 
@@ -225,9 +225,9 @@ class Environment:
         - If it is a number, the method will continue stepping
           until the environment's time reaches *until*.
 
-        """
+        """ # 一直执行step直到结束.
         if until is not None:
-            if not isinstance(until, Event):
+            if not isinstance(until, Event):  # 如果until 不是一个事件, 那么我们就认为他是一个时间. 所以一定能转化为一个simtime
                 # Assume that *until* is a number if it is not None and
                 # not an event.  Create a Timeout(until) in this case.
                 at: SimTime = until if isinstance(until, int) else float(until)
@@ -237,22 +237,22 @@ class Environment:
                         f'until ({at}) must be greater than the current simulation time'
                     )
 
-                # Schedule the event before all regular timeouts.
+                # Schedule the event before all regular timeouts. # 计划里面加入这个until事件即可.他作为要紧事件, 紧急度是0级.
                 until = Event(self)
                 until._ok = True
                 until._value = None
                 self.schedule(until, URGENT, at - self.now)
 
-            elif until.callbacks is None:
+            elif until.callbacks is None: # 如果until是一个事件,那么查看他的回调, 如果回调空了,说明运行过了, 直接返回值value即可.
                 # Until event has already been processed.
                 return until.value
 
-            until.callbacks.append(StopSimulation.callback)
+            until.callbacks.append(StopSimulation.callback)#添加终止回调
 
         try:
             while True:
-                self.step()
-        except StopSimulation as exc:
+                self.step() #一直死循环到step结束.step代码能看到都是raise来跳出的.所以252行用try来写.
+        except StopSimulation as exc: # 85行会触发给255行.
             return exc.args[0]  # == until.value
         except EmptySchedule:
             if until is not None:
