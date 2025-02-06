@@ -79,3 +79,13 @@ generator:
 
 # simpy_demo
 "# simpy_demo" 
+
+
+
+
+#2025-02-01,10点40
+第二个库: PySimulator
+
+还是先读说明书:
+    https://www.salabim.org/manual/Overview.html
+
